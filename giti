@@ -1,0 +1,109 @@
+#!/bin/bash
+
+INIT=false
+REMOTE=""
+IGNORE=""
+
+USAGE="
+giti [options]
+        -h,--help               display help message
+        -i,--init               initialize a new git repository
+        -r,--remote url         add remote origin at location url and push
+        -g,--gitignore lan      add a gitignore file for language lan
+        -q,--quick lan          combines -i and -g
+"
+
+getIgnoreFile(){
+  if [ -a ".gitignore" ]; then
+    echo ".gitignore file already exists here!"
+    exit 1
+  fi
+
+  ignoreFile=$(curl -s "https://raw.githubusercontent.com/github/gitignore/master/$1.gitignore")
+  if [ "$ignoreFile" == "Not Found" ]; then
+    echo "gitignore file not found"
+    exit 1;
+  fi
+
+  echo "$ignoreFile" > .gitignore
+
+  if [ -z ${EDITOR+x} ]; then
+    EDITOR="$(which vim)"
+  fi
+
+  $EDITOR .gitignore
+}
+
+addRemote(){
+  if [ ! -d ".git" ]; then
+    echo "no git repository exists - cannot add remote!"
+    exit 1
+  fi
+
+  git remote add origin "$1"
+  git push --set-upstream origin master
+}
+
+init(){
+  if [ -d ".git" ]; then
+    echo "git repository already exists here!"
+    exit 1
+  fi
+
+  git init
+  git add .
+  git commit -m 'initial commit'
+}
+
+parseArgs(){
+  while [[ $# > 0 ]]; do
+  key="$1"
+
+  case $key in
+    -h|--help)
+      echo "$USAGE"
+      exit 0
+      ;;
+    -i|--init)
+      INIT=true
+      ;;
+    -r|--remote)
+      REMOTE="$2"
+      shift
+      ;;
+    -g|--gitignore)
+      IGNORE="$2"
+      shift
+      ;;
+    -q|--quick)
+      IGNORE="$2"
+      INIT=true
+      REMOTE=""
+      break
+      ;;
+    *)
+      echo "unrecognized option $1"
+      exit 1
+      ;;
+  esac
+  shift
+  done
+}
+
+main(){
+  parseArgs "$@"
+
+  if [ -n "$IGNORE" ]; then
+    getIgnoreFile "$IGNORE"
+  fi
+
+  if $INIT; then
+    init
+  fi
+
+  if [ -n "$REMOTE" ]; then
+    addRemote "$REMOTE"
+  fi
+}
+
+main "$@"
