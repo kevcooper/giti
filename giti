@@ -78,7 +78,6 @@ parseArgs(){
     -q|--quick)
       IGNORE="$2"
       INIT=true
-      REMOTE=""
       break
       ;;
     *)
