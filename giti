@@ -78,7 +78,7 @@ parseArgs(){
     -q|--quick)
       IGNORE="$2"
       INIT=true
-      break
+      shift
       ;;
     *)
       echo "unrecognized option $1"
